@@ -1,0 +1,27 @@
+# /etc/conf.d/dogcoind: config file for /etc/init.d/dogcoind
+
+# Config file location
+#DOGCOIND_CONFIGFILE="/etc/dogcoin.combtanium.conf"
+
+# What directory to write pidfile to?  (created and owned by $DOGCOIND_USER)
+#DOGCOIND_PIDDIR="/var/run/dogcoind"
+
+# What filename to give the pidfile
+#DOGCOIND_PIDFILE="${DOGCOIND_PIDDIR}/dogcoind.pid"
+
+# Where to write dogcoind data (be mindful that the blockchain is large)
+#DOGCOIND_DATADIR="/var/lib/dogcoind"
+
+# User and group to own dogcoind process
+#DOGCOIND_USER="dogcoin"
+#DOGCOIND_GROUP="dogcoin"
+
+# Path to dogcoind executable
+#DOGCOIND_BIN="/usr/bin/dogcoind"
+
+# Nice value to run dogcoind under
+#DOGCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+DOGCOIND_OPTS="-disablewallet"
+

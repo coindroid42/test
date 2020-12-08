@@ -1,0 +1,86 @@
+#!/sbin/runscript
+
+# backward compatibility for existing gentoo layout 
+#
+if [ -d "/var/lib/dogcoin/.dogcoin" ]; then
+	DOGCOIND_DEFAULT_DATADIR="/var/lib/dogcoin/.dogcoin"
+else
+	DOGCOIND_DEFAULT_DATADIR="/var/lib/dogcoind"
+fi
+
+DOGCOIND_CONFIGFILE=${DOGCOIND_CONFIGFILE:-/etc/dogcoin.combtanium.conf}
+DOGCOIND_PIDDIR=${DOGCOIND_PIDDIR:-/var/run/dogcoind}
+DOGCOIND_PIDFILE=${DOGCOIND_PIDFILE:-${DOGCOIND_PIDDIR}/dogcoind.pid}
+DOGCOIND_DATADIR=${DOGCOIND_DATADIR:-${DOGCOIND_DEFAULT_DATADIR}}
+DOGCOIND_USER=${DOGCOIND_USER:-dogcoin}
+DOGCOIND_GROUP=${DOGCOIND_GROUP:-dogcoin}
+DOGCOIND_BIN=${DOGCOIND_BIN:-/usr/bin/dogcoind}
+
+name="DogCoin Core Daemon"
+description="DogCoin crypto-currency p2p network daemon"
+
+command="/usr/bin/dogcoind"
+command_args="-pid=\"${DOGCOIND_PIDFILE}\" \
+		-conf=\"${DOGCOIND_CONFIGFILE}\" \
+		-datadir=\"${DOGCOIND_DATADIR}\" \
+		-daemon \
+		${DOGCOIND_OPTS}"
+
+required_files="${DOGCOIND_CONFIGFILE}"
+start_stop_daemon_args="-u ${DOGCOIND_USER} \
+			-N ${DOGCOIND_NICE:-0} -w 2000"
+pidfile="${DOGCOIND_PIDFILE}"
+retry=60
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${DOGCOIND_USER}:${DOGCOIND_GROUP}" \
+	"${DOGCOIND_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${DOGCOIND_USER}:${DOGCOIND_GROUP}" \
+	"${DOGCOIND_PIDDIR}"
+
+	checkpath -f \
+	-o ${DOGCOIND_USER}:${DOGCOIND_GROUP} \
+	-m 0660 \
+	${DOGCOIND_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${DOGCOIND_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run dogcoind."
+		eerror "The setting must appear in ${DOGCOIND_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following"
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is also recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"DOGC Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}
